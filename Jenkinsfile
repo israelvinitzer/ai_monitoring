@@ -2,14 +2,9 @@ pipeline {
     agent any
 
     stages {
-        stage('Install requirements') {
-            steps {
-                sh 'pip install -r requirements.txt'
-            }
-        }
         stage('Test') {
             steps {
-                sh 'python -m pytest'
+               sh 'docker run --rm -v $(pwd):/app -w /app python:3.9-slim sh -c "pip install -r requirements.txt && python -m pytest"'
             }
         }
     }
