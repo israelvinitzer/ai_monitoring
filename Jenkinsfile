@@ -7,5 +7,15 @@ pipeline {
                sh 'docker run --rm -v $(pwd):/app -w /app python:3.9-slim sh -c "pip install -r requirements.txt && flake8 . && python -m pytest"'
             }
         }
+        stage('Build') {
+            steps {
+               sh 'docker build -t my-app .'
+            }
+        }
+        stage('Run') {
+            steps {
+               sh 'docker run -d -p 5000:5000 my-app'
+            }
+        }
     }
 }
