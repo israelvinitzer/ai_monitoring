@@ -14,7 +14,8 @@ pipeline {
         }
         stage('Run') {
             steps {
-               sh 'docker run -d -p 5000:5000 my-app'
+               rm -f my-app-container || true
+               sh 'docker run -d --name my-app-container -p 5000:5000 my-app'
             }
         }
         stage('Health Check') {
