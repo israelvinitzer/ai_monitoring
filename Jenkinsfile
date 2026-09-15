@@ -17,5 +17,10 @@ pipeline {
                sh 'docker run -d -p 5000:5000 my-app'
             }
         }
+        stage('Health Check') {
+            steps {
+               sh 'curl -f http://localhost:5000/health || exit 1'
+            }
+        }
     }
 }
