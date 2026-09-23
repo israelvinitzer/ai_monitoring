@@ -23,4 +23,5 @@ volumes:
   registry-data:
 networks:
   cicd:
-  
+    name: cicd-lab_cicd
+    external: true  
