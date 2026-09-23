@@ -14,6 +14,12 @@ pipeline {
                sh 'docker push registry:5000/ai_monitoring-app:latest'
             }
         }
+        
+        stage('Pull') {
+            steps {
+               sh 'docker pull registry:5000/ai_monitoring-app:latest'
+            }
+        }
         stage('Run') {
             steps {
                sh 'docker rm -f my-app-container || true'
