@@ -9,7 +9,7 @@ pipeline {
         }
         stage('Build') {
             steps {
-               sh 'docker build -t my-app .'
+               sh 'docker build -t ai_monitoring-app:latest .'
             }
         }
         stage('Run') {
