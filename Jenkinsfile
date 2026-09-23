@@ -23,7 +23,7 @@ pipeline {
         stage('Run') {
             steps {
                sh 'docker rm -f my-app-container || true'
-               sh 'docker run -d --name my-app-container -p 5000:5000 my-app'
+               sh 'docker run -d --name my-app-container -p 5000:5000 registry:5000/ai_monitoring-app:latest'
             }
         }
         stage('Health Check') {
