@@ -11,6 +11,7 @@ pipeline {
             steps {
                sh 'docker build -t ai_monitoring-app:latest .'
                sh 'docker tag ai_monitoring-app:latest registry:5000/ai_monitoring-app:latest'
+               sh 'docker push registry:5000/ai_monitoring-app:latest'
             }
         }
         stage('Run') {
