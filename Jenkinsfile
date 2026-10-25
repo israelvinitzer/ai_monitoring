@@ -28,8 +28,7 @@ pipeline {
         }
         stage('Health Check') {
             steps {
-               sh 'curl -f http://docker:5000/does-not-exist || exit 1'
-             //  sh 'curl -f http://docker:5000/health || exit 1'
+               sh 'curl -f http://docker:5000/health || exit 1'
             }
         }
     }
