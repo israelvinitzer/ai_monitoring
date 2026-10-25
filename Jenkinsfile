@@ -31,12 +31,12 @@ pipeline {
                sh 'curl -f http://docker:5000/health || exit 1'
             }
         }
-        stage('Cleanup') {
-            steps {
-               sh 'docker rm -f my-app-container || true'
-            }
-        }
-        
-        
     }
+    post {
+        always {
+            echo 'Cleaning up test container'
+            sh 'docker rm -f my-app-container || true'
+        }
+    }    
 }
+
