@@ -34,7 +34,7 @@ pipeline {
     }
     post {
         always {
-            echo 'Cleaning up test container'
+            echo 'Cleaning up test container!'
             sh 'docker rm -f my-app-container || true'
         }
     }    
