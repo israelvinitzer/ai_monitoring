@@ -9,21 +9,21 @@ pipeline {
         }
         stage('Build') {
             steps {
-               sh 'docker build -t ai_monitoring-app:latest .'
-               sh 'docker tag ai_monitoring-app:latest registry:5000/ai_monitoring-app:latest'
-               sh 'docker push registry:5000/ai_monitoring-app:latest'
+                sh 'docker build -t ai_monitoring-app:${BUILD_NUMBER} .'
+                sh 'docker tag ai_monitoring-app:${BUILD_NUMBER} registry:5000/ai_monitoring-app:${BUILD_NUMBER}'
+                sh 'docker push registry:5000/ai_monitoring-app:${BUILD_NUMBER}'
             }
         }
         
         stage('Pull') {
             steps {
-               sh 'docker pull registry:5000/ai_monitoring-app:latest'
+                sh 'docker pull registry:5000/ai_monitoring-app:${BUILD_NUMBER}'
             }
         }
         stage('Run') {
             steps {
-               sh 'docker rm -f my-app-container || true'
-               sh 'docker run -d --name my-app-container -p 5000:5000 registry:5000/ai_monitoring-app:latest'
+                sh 'docker rm -f my-app-container || true'
+                sh 'docker run -d --name my-app-container -p 5000:5000 registry:5000/ai_monitoring-app:${BUILD_NUMBER}'
             }
         }
         stage('Health Check') {
