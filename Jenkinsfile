@@ -58,7 +58,13 @@ pipeline {
         stage('Run') {
             steps {
                 sh 'docker rm -f my-app-container || true'
-                sh 'docker run -d --name my-app-container -p 5000:5000 registry:5000/ai_monitoring-app:${VERSION}-build.${BUILD_NUMBER}'
+                sh '''
+                    docker run -d \
+                        --name my-app-container \
+                        -p 5000:5000 \
+                        registry:5000/ai_monitoring-app:${VERSION}-build.${BUILD_NUMBER} \
+                        sh -c 'sleep 7 && exec gunicorn --bind 0.0.0.0:5000 --workers 2 app:app'
+                '''
             }
         }
         stage('Health Check') {
