@@ -63,7 +63,21 @@ pipeline {
         }
         stage('Health Check') {
             steps {
-               sh 'curl -f http://docker:5000/health || exit 1'
+                sh '''
+                    for attempt in 1 2 3 4 5; do
+                        if curl -fsS http://docker:5000/health; then
+                            echo "Application is healthy"
+                            exit 0
+                        fi
+
+                        echo "Attempt $attempt failed; retrying in 3 seconds..."
+                        sleep 3
+                    done
+
+                    echo "Application did not become healthy"
+                    docker logs my-app-container || true
+                    exit 1
+                '''
             }
         }
     }
