@@ -64,17 +64,31 @@ pipeline {
         stage('Health Check') {
             steps {
                 sh '''
-                    for attempt in 1 2 3 4 5; do
-                        if curl -fsS http://docker:5000/health; then
+                    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+                        status=$(docker inspect \
+                            --format='{{.State.Health.Status}}' \
+                            my-app-container)
+
+                        echo "Docker health status: $status"
+
+                        if [ "$status" = "healthy" ]; then
                             echo "Application is healthy"
                             exit 0
                         fi
 
-                        echo "Attempt $attempt failed; retrying in 3 seconds..."
+                        if [ "$status" = "unhealthy" ]; then
+                            echo "Application became unhealthy"
+                            docker inspect \
+                                --format='{{range .State.Health.Log}}{{.Output}}{{end}}' \
+                                my-app-container || true
+                            docker logs my-app-container || true
+                            exit 1
+                        fi
+
                         sleep 3
                     done
 
-                    echo "Application did not become healthy"
+                    echo "Application did not become healthy in time"
                     docker logs my-app-container || true
                     exit 1
                 '''
