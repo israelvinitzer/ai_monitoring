@@ -115,14 +115,9 @@ pipeline {
         always {
             echo 'Cleaning up test container!'
             sh 'docker rm -f my-app-container || true'
+            sh 'docker rm -f ai-monitoring-test-${BUILD_NUMBER} || true'
+
         }
     }
-    post {
-        always {
-            echo 'Cleaning up containers'
-            sh 'docker rm -f my-app-container || true'
-            sh 'docker rm -f ai-monitoring-test-${BUILD_NUMBER} || true'
-        }
-    } 
 }
 
