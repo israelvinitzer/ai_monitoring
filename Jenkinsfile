@@ -22,7 +22,21 @@ pipeline {
         }
         stage('Test') {
             steps {
-               sh 'docker run --rm -v $(pwd):/app -w /app python:3.9-slim sh -c "pip install -r requirements-dev.txt && flake8 . && python -m pytest"'
+                sh '''
+                    test_container="ai-monitoring-test-${BUILD_NUMBER}"
+
+                    docker rm -f "$test_container" >/dev/null 2>&1 || true
+
+                    docker create \
+                        --name "$test_container" \
+                        --workdir /app \
+                        python:3.9-slim \
+                        sh -c "pip install -r requirements-dev.txt && flake8 . && python -m pytest"
+
+                    docker cp . "$test_container":/app
+
+                    docker start -a "$test_container"
+                '''
             }
         }
         stage('SonarQube Analysis') {
@@ -102,6 +116,13 @@ pipeline {
             echo 'Cleaning up test container!'
             sh 'docker rm -f my-app-container || true'
         }
-    }    
+    }
+    post {
+        always {
+            echo 'Cleaning up containers'
+            sh 'docker rm -f my-app-container || true'
+            sh 'docker rm -f ai-monitoring-test-${BUILD_NUMBER} || true'
+        }
+    } 
 }
 
