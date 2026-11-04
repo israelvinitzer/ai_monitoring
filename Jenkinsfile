@@ -20,25 +20,45 @@ pipeline {
                 '''
             }
         }
-        stage('Test') {
+        stage('Quality Checks') {
+            parallel {
+                stage('Lint') {
+                    steps {
+                        sh '''
+                            container="ai-monitoring-lint-${BUILD_NUMBER}"
+                            docker rm -f "$container" >/dev/null 2>&1 || true
+
+                            docker create \
+                                --name "$container" \
+                                --workdir /app \
+                                python:3.9-slim \
+                                sh -c "pip install -r requirements-dev.txt && flake8 ."
+
+                            docker cp . "$container":/app
+                            docker start -a "$container"
+                        '''
+                    }
+                }
+
+        stage('Unit Tests') {
             steps {
                 sh '''
-                    test_container="ai-monitoring-test-${BUILD_NUMBER}"
-
-                    docker rm -f "$test_container" >/dev/null 2>&1 || true
+                    container="ai-monitoring-tests-${BUILD_NUMBER}"
+                    docker rm -f "$container" >/dev/null 2>&1 || true
 
                     docker create \
-                        --name "$test_container" \
+                        --name "$container" \
                         --workdir /app \
                         python:3.9-slim \
-                        sh -c "pip install -r requirements-dev.txt && flake8 . && python -m pytest"
+                        sh -c "pip install -r requirements-dev.txt && python -m pytest"
 
-                    docker cp . "$test_container":/app
-
-                    docker start -a "$test_container"
+                    docker cp . "$container":/app
+                    docker start -a "$container"
                 '''
             }
         }
+    }
+}
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
@@ -116,6 +136,8 @@ pipeline {
             echo 'Cleaning up test container!'
             sh 'docker rm -f my-app-container || true'
             sh 'docker rm -f ai-monitoring-test-${BUILD_NUMBER} || true'
+            sh 'docker rm -f ai-monitoring-lint-${BUILD_NUMBER} || true'
+
 
         }
     }
