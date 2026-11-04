@@ -135,7 +135,7 @@ pipeline {
         always {
             echo 'Cleaning up test container!'
             sh 'docker rm -f my-app-container || true'
-            sh 'docker rm -f ai-monitoring-test-${BUILD_NUMBER} || true'
+            sh 'docker rm -f ai-monitoring-tests-${BUILD_NUMBER} || true'
             sh 'docker rm -f ai-monitoring-lint-${BUILD_NUMBER} || true'
 
 
