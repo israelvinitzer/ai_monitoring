@@ -153,7 +153,7 @@ pipeline {
     }
     post {
         always {
-            echo 'Cleaning up build containers...'
+            echo 'Cleaning up build containers....'
 
             sh '''
                 safe_build_tag=$(printf '%s' "$BUILD_TAG" | sed 's/[^A-Za-z0-9_.-]/-/g')
