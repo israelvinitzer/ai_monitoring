@@ -2,6 +2,9 @@ pipeline {
     agent {
         label 'docker-agent'
     }
+    options {
+        disableConcurrentBuilds()
+    }
     parameters {
         string(
             name: 'VERSION',
@@ -28,7 +31,8 @@ pipeline {
                 stage('Lint') {
                     steps {
                         sh '''
-                            container="ai-monitoring-lint-${BUILD_NUMBER}"
+                            safe_build_tag=$(printf '%s' "$BUILD_TAG" | sed 's/[^A-Za-z0-9_.-]/-/g')
+                            container="ai-monitoring-lint-${safe_build_tag}"
                             docker rm -f "$container" >/dev/null 2>&1 || true
 
                             docker create \
@@ -46,7 +50,8 @@ pipeline {
             stage('Unit Tests') {
                 steps {
                     sh '''
-                        container="ai-monitoring-tests-${BUILD_NUMBER}"
+                        safe_build_tag=$(printf '%s' "$BUILD_TAG" | sed 's/[^A-Za-z0-9_.-]/-/g')
+                        container="ai-monitoring-tests-${safe_build_tag}"
                         docker rm -f "$container" >/dev/null 2>&1 || true
 
                         docker create \
@@ -148,12 +153,18 @@ pipeline {
     }
     post {
         always {
-            echo 'Cleaning up test containers...'
-            sh 'docker rm -f my-app-container || true'
-            sh 'docker rm -f ai-monitoring-tests-${BUILD_NUMBER} || true'
-            sh 'docker rm -f ai-monitoring-lint-${BUILD_NUMBER} || true'
+            echo 'Cleaning up build containers...'
 
+            sh '''
+                safe_build_tag=$(printf '%s' "$BUILD_TAG" | sed 's/[^A-Za-z0-9_.-]/-/g')
 
+                if [ "$BRANCH_NAME" = "main" ]; then
+                    docker rm -f my-app-container || true
+                fi
+
+                docker rm -f "ai-monitoring-tests-${safe_build_tag}" || true
+                docker rm -f "ai-monitoring-lint-${safe_build_tag}" || true
+            '''
         }
     }
 }
