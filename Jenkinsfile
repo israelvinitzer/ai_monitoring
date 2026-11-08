@@ -2,6 +2,9 @@ pipeline {
     agent {
         label 'docker-agent'
     }
+    options {
+        disableConcurrentBuilds()
+    }
     parameters {
         string(
             name: 'VERSION',
@@ -11,6 +14,9 @@ pipeline {
     }
     stages {
         stage('Validate Version') {
+            when {
+                branch 'main'
+            }
             steps {
                 sh '''
                     echo "$VERSION" | grep -Eq '^[0-9]+\\.[0-9]+\\.[0-9]+$' || {
@@ -25,7 +31,8 @@ pipeline {
                 stage('Lint') {
                     steps {
                         sh '''
-                            container="ai-monitoring-lint-${BUILD_NUMBER}"
+                            safe_build_tag=$(printf '%s' "$BUILD_TAG" | sed 's/[^A-Za-z0-9_.-]/-/g')
+                            container="ai-monitoring-lint-${safe_build_tag}"
                             docker rm -f "$container" >/dev/null 2>&1 || true
 
                             docker create \
@@ -40,24 +47,25 @@ pipeline {
                     }
                 }
 
-        stage('Unit Tests') {
-            steps {
-                sh '''
-                    container="ai-monitoring-tests-${BUILD_NUMBER}"
-                    docker rm -f "$container" >/dev/null 2>&1 || true
+            stage('Unit Tests') {
+                steps {
+                    sh '''
+                        safe_build_tag=$(printf '%s' "$BUILD_TAG" | sed 's/[^A-Za-z0-9_.-]/-/g')
+                        container="ai-monitoring-tests-${safe_build_tag}"
+                        docker rm -f "$container" >/dev/null 2>&1 || true
 
-                    docker create \
-                        --name "$container" \
-                        --workdir /app \
-                        python:3.9-slim \
-                        sh -c "pip install -r requirements-dev.txt && python -m pytest"
+                        docker create \
+                            --name "$container" \
+                            --workdir /app \
+                            python:3.9-slim \
+                            sh -c "pip install -r requirements-dev.txt && python -m pytest"
 
-                    docker cp . "$container":/app
-                    docker start -a "$container"
-                '''
+                        docker cp . "$container":/app
+                        docker start -a "$container"
+                    '''
+                }
             }
         }
-    }
 }
         stage('SonarQube Analysis') {
             steps {
@@ -78,6 +86,9 @@ pipeline {
             }
         }
         stage('Build') {
+            when {
+                branch 'main'
+            }
             steps {
                 sh 'docker build -t ai_monitoring-app:${VERSION}-build.${BUILD_NUMBER} .'
                 sh 'docker tag ai_monitoring-app:${VERSION}-build.${BUILD_NUMBER} registry:5000/ai_monitoring-app:${VERSION}-build.${BUILD_NUMBER}'
@@ -86,18 +97,27 @@ pipeline {
         }
 
         stage('Pull') {
+            when {
+                branch 'main'
+            }
             steps {
                 sh 'docker pull registry:5000/ai_monitoring-app:${VERSION}-build.${BUILD_NUMBER}'
             }
         }
 
         stage('Run') {
+                when {
+                branch 'main'
+            }
             steps {
                 sh 'docker rm -f my-app-container || true'
                 sh 'docker run -d --name my-app-container -p 5000:5000 registry:5000/ai_monitoring-app:${VERSION}-build.${BUILD_NUMBER}'
             }
         }
         stage('Health Check') {
+            when {
+                branch 'main'
+            }
             steps {
                 sh '''
                     for attempt in 1 2 3 4 5 6 7 8 9 10; do
@@ -133,12 +153,18 @@ pipeline {
     }
     post {
         always {
-            echo 'Cleaning up test container!'
-            sh 'docker rm -f my-app-container || true'
-            sh 'docker rm -f ai-monitoring-tests-${BUILD_NUMBER} || true'
-            sh 'docker rm -f ai-monitoring-lint-${BUILD_NUMBER} || true'
+            echo 'Cleaning up build containers...'
 
+            sh '''
+                safe_build_tag=$(printf '%s' "$BUILD_TAG" | sed 's/[^A-Za-z0-9_.-]/-/g')
 
+                if [ "$BRANCH_NAME" = "main" ]; then
+                    docker rm -f my-app-container || true
+                fi
+
+                docker rm -f "ai-monitoring-tests-${safe_build_tag}" || true
+                docker rm -f "ai-monitoring-lint-${safe_build_tag}" || true
+            '''
         }
     }
 }
